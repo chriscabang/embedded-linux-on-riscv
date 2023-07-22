@@ -1,1 +1,9 @@
 *.code-workspace
+*.img
+buildroot/
+busybox/
+linux/
+opensbi/
+qemu/
+u-boot/
+toolchain/
