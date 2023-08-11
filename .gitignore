@@ -1,6 +1,7 @@
 *.code-workspace
 *.img
 bin/
+build/
 buildroot/
 busybox/
 linux/
