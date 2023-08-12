@@ -45,9 +45,14 @@ $(ROOT)/linux: $(CC)
 $(BUILD)/Image: $(ROOT)/linux
 	cp $</arch/$(ARCH)/boot/Image $@
 
-$(ROOT)/busybox:
-	cp $(CONFIGS)/busybox_$(ARCH)$(XLEN)_defconfig $@/.config
-	make -C busybox ARCH=$(ARCH) CROSS_COMPILE=$(TOOLCHAIN_PREFIX) -j $(NPROC)
+$(ROOT)/busybox/_install:
+	cp $(CONFIGS)/busybox_$(ARCH)$(XLEN)_defconfig $(ROOT)/busybox/.config
+	make -C busybox allnoconfig
+	make -C busybox CROSS_COMPILE=$(TOOLCHAIN_PREFIX) -j $(NPROC)
+	make -C busybox install
+
+$(BUILD)/rootfs.tar: $(ROOT)/busybox/_install
+	cp -R $< $(BUILD)/rootfs
 
 $(BUILD)/disk.img:
 	dd if=/dev/zero of=$@ bs=1M count=128 status=progress
@@ -69,7 +74,7 @@ format: $(BUILD)/disk.img partition
 all: firmware image rootfs
 firmware: $(BUILD)/fw_payload.bin
 image: $(BUILD)/Image
-rootfs: $(ROOT)/busybox
+rootfs: $(BUILD)/rootfs.tar
 disk: format
 install: all disk
 
@@ -82,6 +87,7 @@ wipe: clean
 	make -C u-boot clean
 	make -C opensbi clean
 	make -C linux clean
+	make -C busybox distclean
 
 help:
 	@echo  'Cleaning targets:'
