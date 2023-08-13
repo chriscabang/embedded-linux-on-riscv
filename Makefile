@@ -15,13 +15,13 @@ CC                := $(TOOLCHAIN_PREFIX)gcc
 BUILDROOT_CONFIG  := $(CONFIGS)/buildroot_$(ARCH)$(XLEN)_defconfig
 
 BOOTLOADER_CONFIG := $(CONFIGS)/uboot_$(ARCH)$(XLEN)_defconfig
-BOOTLOADER_FLAGS	+= ARCH=$(ARCH)
-BOOTLOADER_FLAGS	+= CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
+BOOTLOADER_FLAGS  += ARCH=$(ARCH)
+BOOTLOADER_FLAGS  += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 
-SBI_FLAGS					+= ARCH=$(ARCH)
-SBI_FLAGS					+= CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
-SBI_FLAGS					+= PLATFORM=$(PLATFORM)
-SBI_FLAGS					+= PLATFORM_RISCV_XLEN=$(XLEN)
+SBI_FLAGS         += ARCH=$(ARCH)
+SBI_FLAGS         += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
+SBI_FLAGS         += PLATFORM=$(PLATFORM)
+SBI_FLAGS         += PLATFORM_RISCV_XLEN=$(XLEN)
 
 LINUX_CONFIG      := $(CONFIG)/linux_$(ARCH)$(XLEN)_defconfig
 LINUX_FLAGS       += ARCH=$(ARCH)
@@ -48,7 +48,7 @@ all: prerequisites fw_payload.bin Image rootfs
 $(ROOT)/u-boot/u-boot.bin: $(CC)
 	@if [ ! -e $(lastword $(subst /, ,$@)).timestamp ]; then \
 		cp $(BOOTLOADER_CONFIG) u-boot/.config ; \
-		make -C u-boot ARCH=$(ARCH) olddefconfig ; \
+		make -C u-boot $(BOOTLOADER_FLAGS) olddefconfig ; \
 		make -C u-boot $(BOOTLOADER_FLAGS) -j $(NPROC) ; \
 		touch $(lastword $(subst /, ,$@)).timestamp ; \
 	fi
