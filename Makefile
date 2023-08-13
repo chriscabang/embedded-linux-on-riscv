@@ -99,7 +99,7 @@ $(INSTALL)/qemu/build:
 
 $(BUILD)/run-qemu.sh: $(INSTALL)/qemu/build
 	echo "#!/bin/sh" > $@
-	echo "qemu-system-riscv64 -m 2G -nographic -machine virt -smp 8 \\" >> $@
+	echo "qemu-system-$(ARCH)$(XLEN) -m 2G -nographic -machine virt -smp 8 \\" >> $@
 	echo "-bios $(BUILD)/fw_payload.elf \\" >> $@
 	echo "-drive file=$(BUILD)/disk.img,format=raw,id=hd0 \\" >> $@
 	echo "-device virtio-blk-device,drive=hd0 \\" >> $@
