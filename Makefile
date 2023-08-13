@@ -12,9 +12,9 @@ TOOLCHAIN_PREFIX  := $(TOOLCHAIN_DIR)/$(TOOLCHAIN)/bin/$(ARCH)$(XLEN)-linux-
 NPROC              = $(shell nproc)
 CC                := $(TOOLCHAIN_PREFIX)gcc
 
-BUILDROOT_CONFIG   = $(CONFIGS)/buildroot_$(ARCH)$(XLEN)_defconfig
+BUILDROOT_CONFIG  := $(CONFIGS)/buildroot_$(ARCH)$(XLEN)_defconfig
 
-BOOTLOADER_CONFIG  = $(CONFIGS)/uboot_$(ARCH)$(XLEN)_defconfig
+BOOTLOADER_CONFIG := $(CONFIGS)/uboot_$(ARCH)$(XLEN)_defconfig
 BOOTLOADER_FLAGS	+= ARCH=$(ARCH)
 BOOTLOADER_FLAGS	+= CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 
@@ -23,9 +23,12 @@ SBI_FLAGS					+= CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 SBI_FLAGS					+= PLATFORM=$(PLATFORM)
 SBI_FLAGS					+= PLATFORM_RISCV_XLEN=$(XLEN)
 
-LINUX_CONFIG       = $(CONFIG)/linux_$(ARCH)$(XLEN)_defconfig
+LINUX_CONFIG      := $(CONFIG)/linux_$(ARCH)$(XLEN)_defconfig
 LINUX_FLAGS       += ARCH=$(ARCH)
 LINUX_FLAGS       += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
+
+BUSYBOX_CONFIG    := $(CONFIGS)/busybox_$(ARCH)$(XLEN)_defconfig
+BUSYBOX_FLAGS     += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 
 prerequisites:
 	mkdir -p $(BUILD)
@@ -76,10 +79,9 @@ $(BUILD)/Image: $(ROOT)/linux/arch/$(ARCH)/boot/Image
 
 $(ROOT)/busybox/_install:
 	@if [ ! -e busybox.timestamp ]; then \
-		cp $(CONFIGS)/busybox_$(ARCH)$(XLEN)_defconfig $(ROOT)/busybox/.config ; \
-		make -C busybox allnoconfig ; \
-		make -C busybox CROSS_COMPILE=$(TOOLCHAIN_PREFIX) -j $(NPROC) ; \
-		make -C busybox install ; \
+		cp $(BUSYBOX_CONFIG) $(ROOT)/busybox/.config ; \
+		make -C busybox $(BUSYBOX_FLAGS) -j $(NPROC) ; \
+		make -C busybox $(BUSYBOX_FLAGS) install ; \
 		touch busybox.timestamp ; \
 	fi
 
@@ -97,15 +99,13 @@ partition: $(BUILD)/disk.img
 			-t 2:8300 -c 2:"Root Filesystem" $<
 
 format: $(BUILD)/disk.img partition
-#	mkfs.vfat -F 32 -n boot $(BUILD)/disk.img1
-#	mkfs.ext4 -F -L roots $(BUILD)/disk.img2
 	fdisk -l $<
 
 .PHONY: all fw_payload.bin Image rootfs disk help wipe clean
 
 fw_payload.bin: $(BUILD)/fw_payload.bin
 Image: $(BUILD)/Image
-rootfs: $(BUILD)/rootfs.tar
+rootfs: $(BUILD)/rootfs
 disk: format
 
 clean:
