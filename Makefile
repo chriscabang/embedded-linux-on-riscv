@@ -88,6 +88,23 @@ $(ROOT)/busybox/_install:
 $(BUILD)/rootfs: $(ROOT)/busybox/_install
 	cp -R $< $@
 
+$(INSTALL)/qemu/build:
+	@if [ ! -e qemu.timestamp ]; then \
+		cd $(ROOT)/qemu ; \
+    ./configure --target-list=$(ARCH)$(XLEN)-softmmu ; \
+		make -j $(NPROC) ; \
+		make install ; \
+		touch $(ROOT)/qemu.timestamp ; \
+	fi
+
+$(BUILD)/run-qemu.sh: $(INSTALL)/qemu/build
+	echo "#!/bin/sh" > $@
+	echo "qemu-system-riscv64 -m 2G -nographic -machine virt -smp 8 \\" >> $@
+	echo "-bios $(BUILD)/fw_payload.elf \\" >> $@
+	echo "-drive file=$(BUILD)/disk.img,format=raw,id=hd0 \\" >> $@
+	echo "-device virtio-blk-device,drive=hd0 \\" >> $@
+	chmod +x $@
+
 $(BUILD)/disk.img:
 	dd if=/dev/zero of=$@ bs=1M count=128 status=progress
 
@@ -106,10 +123,12 @@ format: $(BUILD)/disk.img partition
 fw_payload.bin: $(BUILD)/fw_payload.bin
 Image: $(BUILD)/Image
 rootfs: $(BUILD)/rootfs
+qemu: $(BUILD)/run-qemu.sh
 disk: format
 
 clean:
 	rm -rf $(BUILD) *.timestamp
+	cd qemu && make clean
 
 wipe: clean
 	rm -rf $(TOOLCHAIN_DIR)
@@ -118,6 +137,7 @@ wipe: clean
 	make -C opensbi clean
 	make -C linux clean
 	make -C busybox distclean
+	cd qemu && make distclean
 
 help:
 	@echo  'Cleaning targets:'
