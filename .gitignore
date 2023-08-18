@@ -1,6 +1,7 @@
 *.code-workspace
 *.img
 *.timestamp
+*.stamp
 *.applied
 bin/
 build/
