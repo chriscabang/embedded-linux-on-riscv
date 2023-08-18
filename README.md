@@ -1,6 +1,6 @@
 # Embedded Linux on RISCV : Study
 
-[![license](https://img.shields.io/github/license/:user/:repo.svg)](https://github.com/chriscabang/embedded-linux-on-riscv/blob/develop/LICENSE)
+[![license](https://img.shields.io/github/license/:user/:repo.svg)](LICENSE)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
 This repository houses a set of tools for building [embedded Linux on RISCV](https://github.com/chriscabang/embedded-linux-on-riscv) architecture. **This does not contain gdb**.
@@ -48,4 +48,4 @@ Small note: If editing the Readme, please conform to the [standard-readme](https
 
 ## License
 
-[MIT © Chris Cabang.](https://github.com/chriscabang/embedded-linux-on-riscv/blob/develop/LICENSE)
+[MIT](LICENSE) © Chris Cabang
