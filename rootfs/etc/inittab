@@ -1,0 +1,4 @@
+# This is run first script:
+::sysinit:/etc/init.d/rcS
+# Start an "askfirst" shell on the console:
+::askfirst:/bin/sh

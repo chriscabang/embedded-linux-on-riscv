@@ -91,6 +91,7 @@ $(ROOT)/busybox/_install: $(CC)
 
 $(BUILD)/rootfs: $(ROOT)/busybox/_install
 	cp -R $< $@
+	cp -pR $(ROOT)/rootfs/etc $@/
 
 $(INSTALL)/qemu/build:
 	@if [ ! -e qemu.stamp ]; then \
@@ -108,6 +109,7 @@ $(BUILD)/run-qemu.sh: $(INSTALL)/qemu/build
 	echo "-drive file=$(BUILD)/disk.img,format=raw,id=hd0 \\" >> $@
 	echo "-device virtio-blk-device,drive=hd0 \\" >> $@
 	chmod +x $@
+	chown "${SUDO_USER}:${SUDO_USER}" $@
 
 $(BUILD)/disk.img:
 	dd if=/dev/zero of=$@ bs=1M count=128 oflag=sync status=progress
@@ -171,15 +173,15 @@ wipe: clean
 
 help:
 	@echo  'Cleaning targets:'
-	@echo  '  clean				    - delete generated $(BUILD) directory'
-	@echo  '  wipe	    	    - delete all all files created by build including non-source files'
+	@echo  '  clean           - delete generated $(BUILD) directory'
+	@echo  '  wipe            - delete all all files created by build including non-source files'
 	@echo  ''
 	@echo  'Build:'
 	@echo  '  all             - Build all targets marked with [*]'
 	@echo  '* fw_payload.bin  - Build firmware via openSBI'
 	@echo  '* Image           - Build the bare kernel'
 	@echo  '* rootfs          - Build the root file system'
-	@echo  '  emulator        - Build qemu and disk for run-qemu script'
+	@echo  '  world           - Build qemu and disk for run-qemu script'
 	@echo  '  disk            - Build the disk image with Image and file system for qemu'
 	@echo  ''
 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
