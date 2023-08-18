@@ -92,6 +92,8 @@ $(ROOT)/busybox/_install: $(CC)
 $(BUILD)/rootfs: $(ROOT)/busybox/_install
 	cp -R $< $@
 	cp -pR $(ROOT)/rootfs/etc $@/
+	mkdir -p $@/proc
+	mkdir -p $@/sys
 
 $(INSTALL)/qemu/build:
 	@if [ ! -e qemu.stamp ]; then \
