@@ -4,7 +4,7 @@
 #
 
 #
-# Compiler: riscv64-linux-gcc.br_real (Buildroot 2023.05.1) 11.4.0
+# Compiler: gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
 #
 CONFIG_CREATE_ARCH_SYMLINK=y
 CONFIG_LINKER_LIST_ALIGN=4
@@ -220,10 +220,11 @@ CONFIG_BOOTDELAY=2
 # Image support
 #
 # CONFIG_IMAGE_PRE_LOAD is not set
-# CONFIG_USE_BOOTARGS is not set
+CONFIG_USE_BOOTARGS=y
+CONFIG_BOOTARGS="root=/dev/vda2 rootwait console=ttyS0 earlycon=sbi rw"
 # CONFIG_BOOTARGS_SUBST is not set
 CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="run distro_bootcmd"
+CONFIG_BOOTCOMMAND="fatload virtio 0:1 84000000 Image; booti 0x84000000 - ${fdtcontroladdr}"
 CONFIG_USE_PREBOOT=y
 CONFIG_PREBOOT=""
 CONFIG_DEFAULT_FDT_FILE=""
