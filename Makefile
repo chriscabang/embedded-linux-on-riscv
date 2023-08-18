@@ -121,7 +121,6 @@ partition: $(BUILD)/disk.img
 
 format: $(BUILD)/disk.img partition
 	@LOOP_DEVICE=$$(losetup -f --show --partscan $<) ; \
-	echo "$${LOOP_DEVICE}" ; \
 	mkfs.vfat -F 32 -n boot $${LOOP_DEVICE}p1 ; \
 	mkfs.ext4 -L rootfs $${LOOP_DEVICE}p2 ; \
 	mkdir -p /mnt/boot ; \
@@ -132,16 +131,25 @@ format: $(BUILD)/disk.img partition
 	mount $${LOOP_DEVICE}p2 /mnt/rootfs ; \
 	rsync -aH $(BUILD)/rootfs/ /mnt/rootfs/ ; \
 	umount /mnt/rootfs ; \
-	losetup -d $${LOOP_DEVICE} ; \
-	fdisk -l $<
+	losetup -d $${LOOP_DEVICE}
+
+check-files:
+	@test -e $(BUILD)/fw_payload.elf && \
+		test -e $(BUILD)/Image && \
+		test -e $(BUILD)/rootfs || \
+		(echo "At least fw_payload.elf, Image or rootfs does not exist.Exiting." && exit 1)
+
+$(BUILD)/disk: check-files format
+	chown "${SUDO_USER}:${SUDO_USER}" $@.img
+	fdisk -l $@.img
 
 .PHONY: all fw_payload.bin Image rootfs qemu disk help wipe clean
 
 fw_payload.bin: $(BUILD)/fw_payload.bin
 Image: $(BUILD)/Image
 rootfs: $(BUILD)/rootfs
-qemu: $(BUILD)/run-qemu.sh
-disk: format
+world: $(BUILD)/run-qemu.sh $(BUILD)/disk
+disk: $(BUILD)/disk
 
 clean:
 	rm -rf $(BUILD) *.stamp *.applied
@@ -171,7 +179,7 @@ help:
 	@echo  '* fw_payload.bin  - Build firmware via openSBI'
 	@echo  '* Image           - Build the bare kernel'
 	@echo  '* rootfs          - Build the root file system'
-	@echo  '  qemu            - Build qemu and run-qemu script '
+	@echo  '  emulator        - Build qemu and disk for run-qemu script'
 	@echo  '  disk            - Build the disk image with Image and file system for qemu'
 	@echo  ''
 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
