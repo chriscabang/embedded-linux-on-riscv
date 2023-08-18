@@ -35,31 +35,35 @@ prerequisites:
 	mkdir -p $(TOOLCHAIN_DIR)
 
 $(CC): prerequisites
-	@if [ ! -e toolchain.timestamp ]; then \
+	@if [ ! -e toolchain.stamp ]; then \
 		make -C buildroot defconfig BR2_DEFCONFIG=$(BUILDROOT_CONFIG) ; \
 		make -C buildroot sdk -j $(NPROC) ; \
 		tar xf buildroot/output/images/$(TOOLCHAIN).tar.gz -C $(TOOLCHAIN_DIR)/ ; \
 		$(TOOLCHAIN_DIR)/$(TOOLCHAIN)/relocate-sdk.sh ; \
-		touch toolchain.timestamp ; \
+		touch toolchain.stamp ; \
 	fi
 
 all: prerequisites fw_payload.bin Image rootfs
 
+$(ROOT)/app: $(CC)
+	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
+	fi
+
 $(ROOT)/u-boot/u-boot.bin: $(CC)
-	@if [ ! -e $(lastword $(subst /, ,$@)).timestamp ]; then \
+	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
 		cp $(BOOTLOADER_CONFIG) u-boot/.config ; \
 		make -C u-boot $(BOOTLOADER_FLAGS) olddefconfig ; \
 		make -C u-boot $(BOOTLOADER_FLAGS) -j $(NPROC) ; \
-		touch $(lastword $(subst /, ,$@)).timestamp ; \
+		touch $(lastword $(subst /, ,$@)).stamp ; \
 	fi
 
 $(BUILD)/u-boot.bin: $(ROOT)/u-boot/u-boot.bin
 	cp $< $@
 
 $(ROOT)/opensbi: $(BUILD)/u-boot.bin
-	@if [ ! -e $(lastword $(subst /, ,$@)).timestamp ]; then \
+	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
 		make -C opensbi $(SBI_FLAGS) FW_PAYLOAD_PATH=$< ; \
-		touch $(lastword $(subst /, ,$@)).timestamp ; \
+		touch $(lastword $(subst /, ,$@)).stamp ; \
 	fi
 
 $(BUILD)/fw_payload.bin: $(ROOT)/opensbi
@@ -67,34 +71,34 @@ $(BUILD)/fw_payload.bin: $(ROOT)/opensbi
 	cp $</build/platform/$(PLATFORM)/firmware/fw_payload.bin $(BUILD)/fw_payload.bin
 
 $(ROOT)/linux/arch/$(ARCH)/boot/Image: $(CC)
-	@if [ ! -e $(lastword $(subst /, ,$@)).timestamp ]; then \
+	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
 		cp $(LINUX_CONFIG) $(ROOT)/linux/.config ; \
 		make -C linux ARCH=$(ARCH) olddefconfig ; \
 		make -C linux $(LINUX_FLAGS) -j $(NPROC) ; \
-		touch $(lastword $(subst /, ,$@)).timestamp ; \
+		touch $(lastword $(subst /, ,$@)).stamp ; \
 	fi
 
 $(BUILD)/Image: $(ROOT)/linux/arch/$(ARCH)/boot/Image
 	cp $< $@
 
-$(ROOT)/busybox/_install:
-	@if [ ! -e busybox.timestamp ]; then \
+$(ROOT)/busybox/_install: $(CC)
+	@if [ ! -e busybox.stamp ]; then \
 		cp $(BUSYBOX_CONFIG) $(ROOT)/busybox/.config ; \
 		make -C busybox $(BUSYBOX_FLAGS) -j $(NPROC) ; \
 		make -C busybox $(BUSYBOX_FLAGS) install ; \
-		touch busybox.timestamp ; \
+		touch busybox.stamp ; \
 	fi
 
 $(BUILD)/rootfs: $(ROOT)/busybox/_install
 	cp -R $< $@
 
 $(INSTALL)/qemu/build:
-	@if [ ! -e qemu.timestamp ]; then \
+	@if [ ! -e qemu.stamp ]; then \
 		cd $(ROOT)/qemu ; \
     ./configure --target-list=$(ARCH)$(XLEN)-softmmu ; \
 		make -j $(NPROC) ; \
 		make install ; \
-		touch $(ROOT)/qemu.timestamp ; \
+		touch $(ROOT)/qemu.stamp ; \
 	fi
 
 $(BUILD)/run-qemu.sh: $(INSTALL)/qemu/build
@@ -106,7 +110,7 @@ $(BUILD)/run-qemu.sh: $(INSTALL)/qemu/build
 	chmod +x $@
 
 $(BUILD)/disk.img:
-	dd if=/dev/zero of=$@ bs=1M count=128 status=progress
+	dd if=/dev/zero of=$@ bs=1M count=128 oflag=sync status=progress
 
 partition: $(BUILD)/disk.img
 	sgdisk \
@@ -116,9 +120,22 @@ partition: $(BUILD)/disk.img
 			-t 2:8300 -c 2:"Root Filesystem" $<
 
 format: $(BUILD)/disk.img partition
+	@LOOP_DEVICE=$$(losetup -f --show --partscan $<) ; \
+	echo "$${LOOP_DEVICE}" ; \
+	mkfs.vfat -F 32 -n boot $${LOOP_DEVICE}p1 ; \
+	mkfs.ext4 -L rootfs $${LOOP_DEVICE}p2 ; \
+	mkdir -p /mnt/boot ; \
+	mount $${LOOP_DEVICE}p1 /mnt/boot ; \
+	cp $(BUILD)/Image /mnt/boot ; \
+	umount /mnt/boot ; \
+	mkdir -p /mnt/rootfs ; \
+	mount $${LOOP_DEVICE}p2 /mnt/rootfs ; \
+	rsync -aH $(BUILD)/rootfs/ /mnt/rootfs/ ; \
+	umount /mnt/rootfs ; \
+	losetup -d $${LOOP_DEVICE} ; \
 	fdisk -l $<
 
-.PHONY: all fw_payload.bin Image rootfs disk help wipe clean
+.PHONY: all fw_payload.bin Image rootfs qemu disk help wipe clean
 
 fw_payload.bin: $(BUILD)/fw_payload.bin
 Image: $(BUILD)/Image
@@ -127,29 +144,35 @@ qemu: $(BUILD)/run-qemu.sh
 disk: format
 
 clean:
-	rm -rf $(BUILD) *.timestamp
+	rm -rf $(BUILD) *.stamp *.applied
+	make -C buildroot clean
+	make -C u-boot clean
+	make -C opensbi clean
+	make -C busybox clean
+	make -C linux clean
 	cd qemu && make clean
 
 wipe: clean
 	rm -rf $(TOOLCHAIN_DIR)
-	make -C buildroot clean
-	make -C u-boot clean
-	make -C opensbi clean
-	make -C linux clean
+	make -C buildroot distclean
+	make -C u-boot distclean
+	make -C opensbi distclean
 	make -C busybox distclean
+	make -C linux distclean
 	cd qemu && make distclean
 
 help:
 	@echo  'Cleaning targets:'
-	@echo  '  clean				- delete generated $(BUILD) directory'
-	@echo  '  wipe	    	- delete all all files created by build including non-source files'
+	@echo  '  clean				    - delete generated $(BUILD) directory'
+	@echo  '  wipe	    	    - delete all all files created by build including non-source files'
 	@echo  ''
 	@echo  'Build:'
-	@echo  '  all         - Build all targets marked with [*]'
-	@echo  '* linux       - Build the bare kernel'
-	@echo  '* opensbi     - Build all files in dir and below'
-	@echo  '  install     - Build all and install on disk image for load'
-	@echo  '  disk        - Build the LLVM assembly file'
+	@echo  '  all             - Build all targets marked with [*]'
+	@echo  '* fw_payload.bin  - Build firmware via openSBI'
+	@echo  '* Image           - Build the bare kernel'
+	@echo  '* rootfs          - Build the root file system'
+	@echo  '  qemu            - Build qemu and run-qemu script '
+	@echo  '  disk            - Build the disk image with Image and file system for qemu'
 	@echo  ''
 	@echo  'Execute "make" or "make all" to build all targets marked with [*] '
-	@echo  'For further info see the ./README file'
+#	@echo  'For further info see the ./README file'
