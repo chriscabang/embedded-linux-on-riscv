@@ -1,18 +1,24 @@
 [submodule "buildroot"]
 	path = buildroot
 	url = https://github.com/buildroot/buildroot.git
+	ignore = dirty
 [submodule "opensbi"]
 	path = opensbi
 	url = https://github.com/riscv-software-src/opensbi.git
+	ignore = dirty
 [submodule "u-boot"]
 	path = u-boot
 	url = https://github.com/u-boot/u-boot.git
+	ignore = dirty
 [submodule "linux"]
 	path = linux
 	url = https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+	ignore = dirty
 [submodule "busybox"]
 	path = busybox
 	url = https://github.com/mirror/busybox.git
+	ignore = dirty
 [submodule "qemu"]
 	path = qemu
 	url = https://github.com/qemu/qemu.git
+	ignore = dirty
