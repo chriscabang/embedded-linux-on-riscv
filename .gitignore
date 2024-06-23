@@ -3,6 +3,7 @@
 *.timestamp
 *.stamp
 *.applied
+*.vscode/
 bin/
 build/
 buildroot/
