@@ -6,10 +6,17 @@ ROOT               = $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BUILD              = $(ROOT)/build
 CONFIGS            = $(ROOT)/configs
 
+$(info ROOT is $(ROOT))
+$(info BUILD is $(BUILD))
+$(info CONFIGS is $(CONFIGS))
+
+#exit 1;
+
 TOOLCHAIN          = $(ARCH)$(XLEN)-buildroot-linux-gnu_sdk-buildroot
 TOOLCHAIN_DIR      = $(ROOT)/toolchain
 TOOLCHAIN_PREFIX  := $(TOOLCHAIN_DIR)/$(TOOLCHAIN)/bin/$(ARCH)$(XLEN)-linux-
-NPROC              = $(shell nproc)
+NPROC              = $(shell sysctl -n hw.logicalcpu)
+#nproc)
 CC                := $(TOOLCHAIN_PREFIX)gcc
 
 BUILDROOT_CONFIG  := $(CONFIGS)/buildroot_$(ARCH)$(XLEN)_defconfig
@@ -33,11 +40,11 @@ BUSYBOX_FLAGS     += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 prerequisites:
 	mkdir -p $(BUILD)
 	mkdir -p $(TOOLCHAIN_DIR)
-
+#make -C buildroot sdk HOSTCC="/usr/bin/gcc" HOSTCXX="/usr/bin/g++" -j n
 $(CC): prerequisites
 	@if [ ! -e toolchain.stamp ]; then \
 		make -C buildroot defconfig BR2_DEFCONFIG=$(BUILDROOT_CONFIG) ; \
-		make -C buildroot sdk -j $(NPROC) ; \
+		make -C buildroot sdk  -j $(NPROC) ; \
 		tar xf buildroot/output/images/$(TOOLCHAIN).tar.gz -C $(TOOLCHAIN_DIR)/ ; \
 		$(TOOLCHAIN_DIR)/$(TOOLCHAIN)/relocate-sdk.sh ; \
 		touch toolchain.stamp ; \
