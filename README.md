@@ -4,10 +4,19 @@
 [![Linux](https://img.shields.io/badge/Linux-FCC624.svg?style=for-the-badge&logo=Linux&logoColor=black)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git)
 [![RISC-V](https://img.shields.io/badge/RISCV-283272.svg?style=for-the-badge&logo=RISC-V&logoColor=white)]()
 ![QEMU](https://img.shields.io/badge/QEMU-FF6600.svg?style=for-the-badge&logo=QEMU&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/ubuntu-22.04.4-772953?labelColor=e95420)
 
 This repository houses a set of tools for building [embedded Linux on RISCV](https://github.com/chriscabang/embedded-linux-on-riscv) architecture. **This does not contain gdb**.
 
 Most importantly, this is a result of a study on [Embedded Linux in 45 minutes by Michael Opdenacker](https://bootlin.com/pub/conferences/2020/lee/opdenacker-embedded-linux-45minutes-riscv/opdenacker-embedded-linux-45minutes-riscv.pdf).
+
+
+mac
+gcc-11
+wget
+gpatch
+flock
+coreutils
 
 
 ## Table of Contents
@@ -18,7 +27,6 @@ Most importantly, this is a result of a study on [Embedded Linux in 45 minutes b
 - [Targets](#targets)
 - [Notes](#notes)
 - [License](#license)
-
 
 ## Tools:
 * [buildroot](https://github.com/buildroot/buildroot), the simple, efficient and easy-to-use tool to generate embedded Linux systems through cross-compilation.
