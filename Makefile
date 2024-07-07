@@ -30,6 +30,9 @@ LINUX_FLAGS       += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 BUSYBOX_CONFIG    := $(CONFIGS)/busybox_$(ARCH)$(XLEN)_defconfig
 BUSYBOX_FLAGS     += CROSS_COMPILE=$(TOOLCHAIN_PREFIX)
 
+APPS               = $(patsubst apps/%/src,%,$(wildcard apps/**/src))
+
+
 prerequisites:
 	mkdir -p $(BUILD)
 	mkdir -p $(TOOLCHAIN_DIR)
@@ -45,9 +48,12 @@ $(CC): prerequisites
 
 all: prerequisites fw_payload.bin Image rootfs
 
-$(ROOT)/app: $(CC)
-	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
-	fi
+$(ROOT)/apps/$(APPS)/$(APPS): $(CC)
+	$(CC) $(ROOT)/apps/$(APPS)/src/main.c -static -o $@
+
+$(BUILD)/apps: $(ROOT)/apps/$(APPS)/$(APPS)
+	mkdir -p $@
+	cp $< $@/
 
 $(ROOT)/u-boot/u-boot.bin: $(CC)
 	@if [ ! -e $(lastword $(subst /, ,$@)).stamp ]; then \
@@ -89,11 +95,13 @@ $(ROOT)/busybox/_install: $(CC)
 		touch busybox.stamp ; \
 	fi
 
-$(BUILD)/rootfs: $(ROOT)/busybox/_install
+$(BUILD)/rootfs: $(ROOT)/busybox/_install $(BUILD)/apps
 	cp -R $< $@
 	cp -pR $(ROOT)/rootfs/etc $@/
 	mkdir -p $@/proc
 	mkdir -p $@/sys
+	mkdir -p $@/home
+	cp -pR $(BUILD)/apps/* $@/home/
 
 $(INSTALL)/qemu/build:
 	@if [ ! -e qemu.stamp ]; then \
@@ -147,13 +155,14 @@ $(BUILD)/disk: check-files format
 	chown "${SUDO_USER}:${SUDO_USER}" $@.img
 	fdisk -l $@.img
 
-.PHONY: all fw_payload.bin Image rootfs qemu disk help wipe clean
+.PHONY: all fw_payload.bin Image rootfs qemu disk apps help wipe clean
 
 fw_payload.bin: $(BUILD)/fw_payload.bin
 Image: $(BUILD)/Image
 rootfs: $(BUILD)/rootfs
 world: $(BUILD)/run-qemu.sh $(BUILD)/disk
 disk: $(BUILD)/disk
+apps: $(BUILD)/apps
 
 clean:
 	rm -rf $(BUILD) *.stamp *.applied
